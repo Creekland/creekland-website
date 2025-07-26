@@ -18,6 +18,17 @@ on:
       - "package.json"
       - ".github/workflows/deploy.yaml"
 
+  push:
+    branches:
+      - main
+      - staging
+      - dev
+    paths:
+      - "src/**"
+      - "angular.json"
+      - "package.json"
+      - ".github/workflows/deploy.yaml"
+
 env:
   AWS_REGION: us-east-1
 
@@ -62,7 +73,7 @@ jobs:
         run: echo "Angular build completed successfully."
 
   # ----------------------------
-  # Deploy Job (runs on merge)
+  # Deploy Job
   # ----------------------------
   deploy:
     if: github.event_name == 'push'
