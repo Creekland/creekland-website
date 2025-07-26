@@ -87,7 +87,6 @@ jobs:
           aws s3 sync ./dist/creekland-website \
             s3://${{ steps.vars.outputs.bucket }} \
             --delete \
-            --acl public-read \
             --cache-control "no-cache"
 
       # --- INVALIDATE CLOUDFRONT CACHE ---
