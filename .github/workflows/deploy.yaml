@@ -1,0 +1,114 @@
+name: Deploy Creekland Website
+
+on:
+  pull_request:
+    types:
+      - opened
+    branches:
+      - main
+      - staging
+      - dev
+    paths:
+      - "src/**"
+      - "angular.json"
+      - "package.json"
+      - ".github/workflows/deploy.yaml"
+
+env:
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- CHECKOUT REPO---
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      # --- SETUP NODE ---
+      - name: ⚙️ Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # --- CACHE NODE MODULES ---
+      - name: 💾 Cache Node Modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # --- INSTALL DEPENDENCIES ---
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      # --- SET DEPLOYMENT TARGET ---
+      - name: 🧠 Set Deployment Target
+        id: vars
+        run: |
+          BRANCH=${GITHUB_REF##*/}
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "bucket=creekland.co" >> "$GITHUB_OUTPUT"
+            echo "cf_id=${{ secrets.CLOUDFRONT_MAIN_ID }}" >> "$GITHUB_OUTPUT"
+            echo "build_config=production" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" == "staging" ]]; then
+            echo "bucket=staging.creekland.co" >> "$GITHUB_OUTPUT"
+            echo "cf_id=${{ secrets.CLOUDFRONT_STAGING_ID }}" >> "$GITHUB_OUTPUT"
+            echo "build_config=staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "bucket=dev.creekland.co" >> "$GITHUB_OUTPUT"
+            echo "cf_id=${{ secrets.CLOUDFRONT_DEV_ID }}" >> "$GITHUB_OUTPUT"
+            echo "build_config=development" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- BUILD ANGULAR APP ---
+      - name: 🛠️ Build Angular App
+        run: npm run build -- --configuration=${{ steps.vars.outputs.build_config }}
+
+      # --- CONFIGURE AWS CREDS ---
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # --- UPLOAD TO S3 ---
+      - name: ☁️ Upload to S3
+        run: |
+          aws s3 sync ./dist/$(node -p "require('./angular.json').defaultProject") \
+            s3://${{ steps.vars.outputs.bucket }} \
+            --delete \
+            --acl public-read \
+            --cache-control "no-cache"
+
+      # --- INVALIDATE CLOUDFRONT CACHE ---
+      - name: 🚀 Invalidate CloudFront Cache
+        if: ${{ steps.vars.outputs.cf_id != '' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.vars.outputs.cf_id }} \
+            --paths "/*"
+
+      # --- COMMENT CLOUDFRONT URL ---
+      - name: 💬 Comment CloudFront URL on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const bucket = '${{ steps.vars.outputs.bucket }}';
+            const url = `https://${bucket}/`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Deployment complete!  
+              **Preview URL:** [${url}](${url})`
+            });
