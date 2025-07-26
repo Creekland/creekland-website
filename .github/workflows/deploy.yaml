@@ -32,7 +32,7 @@ jobs:
   # Build Job (runs on PR commits)
   # ----------------------------
   build:
-    if: github.event.action != 'closed'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -65,7 +65,7 @@ jobs:
   # Deploy Job (runs on merge)
   # ----------------------------
   deploy:
-    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
 
