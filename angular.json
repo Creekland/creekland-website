@@ -77,18 +77,33 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true
+            },
+            "localhost": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
             }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "host": "localhost",
+            "port": 4200
+          },
           "configurations": {
             "production": {
               "browserTarget": "Creekland:build:production"
             },
             "development": {
               "browserTarget": "Creekland:build:development"
+            },
+            "localhost": {
+              "browserTarget": "Creekland:build:localhost"
             }
           },
           "defaultConfiguration": "development"
