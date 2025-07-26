@@ -1,10 +1,5 @@
 name: Deploy Creekland Website
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-
 on:
   pull_request:
     types:
@@ -26,6 +21,8 @@ env:
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   deploy:
