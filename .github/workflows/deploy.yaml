@@ -84,7 +84,7 @@ jobs:
       # --- UPLOAD TO S3 ---
       - name: ☁️ Upload to S3
         run: |
-          aws s3 sync ./dist/$(node -p "require('./angular.json').defaultProject") \
+          aws s3 sync ./dist/creekland-website \
             s3://${{ steps.vars.outputs.bucket }} \
             --delete \
             --acl public-read \
