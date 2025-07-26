@@ -66,6 +66,7 @@ jobs:
             echo "cf_id=${{ secrets.CLOUDFRONT_STAGING_ID }}" >> "$GITHUB_OUTPUT"
             echo "build_config=staging" >> "$GITHUB_OUTPUT"
           else
+            echo "bucket=dev.creekland.co" >> "$GITHUB_OUTPUT"
             echo "cf_url=https://d3m08y6aktpl85.cloudfront.net/" >> "$GITHUB_OUTPUT"
             echo "cf_id=${{ secrets.CLOUDFRONT_DEV_ID }}" >> "$GITHUB_OUTPUT"
             echo "build_config=development" >> "$GITHUB_OUTPUT"
